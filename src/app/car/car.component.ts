@@ -14,6 +14,7 @@ import { share } from 'rxjs/operators';
 import { scan } from 'rxjs/operators';
 import { filter } from 'rxjs/operators';
 import { throttleTime } from 'rxjs/operators';
+import { distinctUntilChanged } from 'rxjs/operators';
 
 interface Dynamics { deltaSpace: number; acc: number; vel: number; }
 
@@ -23,7 +24,7 @@ const PLAYGROUND_WIDTH = 500;
 
 const POWER = 3;
 const BRAKE_POWER = 5;
-const VEL_0 = 1;  // if velocity (in pix per second) is lower than this value it is considered 0 when braking
+const VEL_0 = 10;  // if velocity (in pix per second) is lower than this value it is considered 0 when braking
 
 
 @Component({
@@ -31,7 +32,7 @@ const VEL_0 = 1;  // if velocity (in pix per second) is lower than this value it
   templateUrl: './car.component.html',
   styleUrls: ['./car.component.css']
 })
-export class CarComponent implements AfterViewInit, OnDestroy {
+export class CarComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('car') car: ElementRef;
   subscriptionX: Subscription;
   subscriptionY: Subscription;
@@ -44,9 +45,14 @@ export class CarComponent implements AfterViewInit, OnDestroy {
   velocityY = 0;
   deltaSpaceObsY: Observable<Dynamics>;
 
+  accXViewVal = 0; accXViewValSub: Subscription;
+  velXViewVal = 0; velXViewValSub: Subscription;
+  accYViewVal = 0; accYViewValSub: Subscription;
+  velYViewVal = 0; velYViewValSub: Subscription;
+
   constructor(private renderer: Renderer2) { }
 
-  ngAfterViewInit() {
+  ngOnInit() {
     this.deltaSpaceObsX = this.accelerateX.pipe(
       switchMap(acc => this.deltaSpace(acc, this.velocityX, this.timeBetweenFrames())),
       tap(data => this.velocityX = data.vel),
@@ -60,6 +66,27 @@ export class CarComponent implements AfterViewInit, OnDestroy {
       // tap(newPositionY => this.car.nativeElement.style.top = newPositionY + 'px'),
       share()
     );
+
+    this.accXViewValSub = this.accXView().subscribe(val => this.accXViewVal = val);
+    this.velXViewValSub = this.velXView().subscribe(val => this.velXViewVal = val);
+    this.accYViewValSub = this.accYView().subscribe(val => this.accYViewVal = val);
+    this.velYViewValSub = this.velYView().subscribe(val => this.velYViewVal = val);
+  }
+
+  ngAfterViewInit() {
+    // this.deltaSpaceObsX = this.accelerateX.pipe(
+    //   switchMap(acc => this.deltaSpace(acc, this.velocityX, this.timeBetweenFrames())),
+    //   tap(data => this.velocityX = data.vel),
+    //   share()
+    // );
+    // this.deltaSpaceObsY = this.accelerateY.pipe(
+    //   switchMap(acc => this.deltaSpace(acc, this.velocityY, this.timeBetweenFrames())),
+    //   tap(data => this.velocityY = data.vel),
+    //   // map(data => data.deltaSpace),
+    //   // scan((space, one) => space + one),
+    //   // tap(newPositionY => this.car.nativeElement.style.top = newPositionY + 'px'),
+    //   share()
+    // );
 
     this.subscriptionX = this.deltaSpaceObsX.pipe(
       map(data => data.deltaSpace),
@@ -77,12 +104,16 @@ export class CarComponent implements AfterViewInit, OnDestroy {
     //   tap(() => console.log(this.car.nativeElement.style.left))
     // ).subscribe();
 
-    this.subscriptionY = this.deltaSpaceObsY.subscribe();
+    // this.subscriptionY = this.deltaSpaceObsY.subscribe();
   }
 
   ngOnDestroy() {
     this.subscriptionX.unsubscribe();
     this.subscriptionY.unsubscribe();
+    this.accXViewValSub.unsubscribe();
+    this.velXViewValSub.unsubscribe();
+    this.accYViewValSub.unsubscribe();
+    this.velYViewValSub.unsubscribe();
   }
 
   right() {
@@ -112,7 +143,7 @@ export class CarComponent implements AfterViewInit, OnDestroy {
       tap(() => {
         this.accelerateX.next(0);
         // this.velocityX = 0;
-        console.log(this.velocityX);
+        console.log('velX', this.velocityX);
       })
     )
     .subscribe(
@@ -120,12 +151,12 @@ export class CarComponent implements AfterViewInit, OnDestroy {
     );
     const subY = this.deltaSpaceObsY.pipe(
       map(data => data.vel),
-      tap(console.log),
+      // tap(console.log),
       filter(vel => Math.abs(vel) < VEL_0),
       tap(() => {
         this.accelerateY.next(0);
         // this.velocityY = 0;
-        console.log(this.velocityY);
+        console.log('velY', this.velocityY);
       })
     )
     .subscribe(
@@ -176,6 +207,29 @@ export class CarComponent implements AfterViewInit, OnDestroy {
         share()
       );
     });
+  }
+
+
+
+  accXView() {
+    return this.dynamicsView(this.deltaSpaceObsX, 'acc');
+  }
+  velXView() {
+    return this.dynamicsView(this.deltaSpaceObsX, 'vel');
+  }
+  accYView() {
+    return this.dynamicsView(this.deltaSpaceObsY, 'acc');
+  }
+  velYView() {
+    return this.dynamicsView(this.deltaSpaceObsY, 'vel');
+  }
+  dynamicsView(deltaSpaceObs: Observable<Dynamics>, measure: string) {
+    return deltaSpaceObs.pipe(
+      throttleTime(1000),
+      map(data => data[measure]),
+      distinctUntilChanged(),
+      map(data => data.toFixed(1)),
+    );
   }
 
 }

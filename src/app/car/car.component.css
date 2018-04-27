@@ -31,3 +31,7 @@
     -ms-transform: rotate(270deg);
     transform: rotate(270deg);
 }
+
+.dynamics {
+    margin-left: 10px
+}
