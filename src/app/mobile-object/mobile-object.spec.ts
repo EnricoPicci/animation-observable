@@ -73,7 +73,7 @@ describe('accelerate', () => {
         }, 2000);
     });
 
-    it('accelerates NEGATIVE a mobile object on the Y axis and measure after 2 seconds the speed reached and the space covered', done => {
+    it('accelerates NEGATIVE a mobile object on the Y axis and measure after 2 sec the speed reached and the space covered', done => {
         const acceleration = -40;
         const tf = timeFrames(10, 300);
         let speed = 0;
@@ -110,9 +110,9 @@ describe('the object has an initial velocity but no acceleration', () => {
         // const tf = timeFrames(10, 200);
         let speed = 0;
         let spaceTravelled = 0;
-        const mobileObject = new MobileOject();
         const initialSpeed = 20;
-        mobileObject.velocityX = initialSpeed;
+        const mobileObject = new MobileOject(null, initialSpeed);
+        // mobileObject.velocityX = initialSpeed;
         // accelerate to start the movement even if acceleration is 0
         setTimeout(() => mobileObject.accelerateX(0), 0);
         mobileObject.deltaSpaceObsX
@@ -141,7 +141,7 @@ describe('the object has an initial velocity but no acceleration', () => {
 
 describe('accelerate and then decelerate', () => {
 
-    it('accelerates a mobile object on the X axis and stops accelerating after 1 sec - measure after 2 seconds speed and space', done => {
+    it('accelerates a mobile object on the X axis and stops accelerating after 1 sec - measure after 2 sec speed and space', done => {
         let speed = 0;
         let spaceTravelled = 0;
         let acc = 0;
@@ -229,7 +229,7 @@ describe('brakes', () => {
         setTimeout(() => mobileObject.accelerateX(acc), 0);
         setTimeout(() => mobileObject.accelerateY(acc), 0);
         // after 1 second brakes
-        setTimeout(() => mobileObject.brake(), 1000);
+        setTimeout(() => {console.log('brake'); mobileObject.brake(); }, 1000);
         mobileObject.deltaSpaceObsX
         .subscribe(
             data => {

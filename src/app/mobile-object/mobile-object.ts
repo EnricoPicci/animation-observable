@@ -4,13 +4,14 @@ import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import { timer } from 'rxjs/observable/timer';
-import { interval } from 'rxjs/observable/interval';
+
 import { tap } from 'rxjs/operators';
 import { map } from 'rxjs/operators';
 import { switchMap } from 'rxjs/operators';
 import { share } from 'rxjs/operators';
 import { take } from 'rxjs/operators';
 import { filter } from 'rxjs/operators';
+import { DirectiveAst } from '@angular/compiler';
 
 export interface Dynamics { deltaSpace: number; cumulatedSpace: number; acc: number; vel: number; }
 
@@ -20,27 +21,21 @@ const MAX_VELOCITY = 1000;
 
 const BRAKE_DECELERATION = 100;
 
+// 5 Observables build the core of this Object
+//   2 Observables (one per dimension, horizontal and vertical) are dedicated to push the data about the dynamics of the moving object,
+//            i.e. delta space, velocity, acceleration, space covered
+//   2 Observables (one per dimension, horizontal and vertical) are dedicated to emit new acceleration events
+//   1 Observable is the timer that ticks at the desired time intervals
 export class MobileOject {
 
-  velocityX = 0;
-  velocityY = 0;
   maxVelocity = MAX_VELOCITY;
-  spaceTravelledX = 0;
-  spaceTravelledY = 0;
+  brakeDeceleration = BRAKE_DECELERATION;
 
   deltaSpaceObsX: Observable<Dynamics>;
   deltaSpaceObsY: Observable<Dynamics>;
 
-  brakeDeceleration = BRAKE_DECELERATION;
-
   private accelerateSubjectX = new BehaviorSubject<number>(0);
   private accelerateSubjectY = new BehaviorSubject<number>(0);
-
-  private leftAccSub: Subscription;
-  private rightAccSub: Subscription;
-  private upAccSub: Subscription;
-  private downAccSub: Subscription;
-
 
   // timeFramesMilliseconds is a sequence of time intervals in milliseconds
   // at the end of each timeFrame an instance of 'Dynamics' is emitted by 'deltaSpaceObsX' and'deltaSpaceObsY' observables
@@ -49,21 +44,45 @@ export class MobileOject {
   //    acceleration: is the accelareation at the beginning of each timeFrame
   //    velocity: is the velocity calculated at the end of each timeFrame based on the acceleration given
   //    deltaSpace: is the space covered within each timeFrame
-  constructor(timeFramesMilliseconds?: Observable<number>) {
+  //    cumulatedSpace: is the space covered since start - it is sensible to direction, so if you travel back and forth
+  //                    inverting direction, than you may end up with 0 cumulatedSpace even if you have travelled a lot
+  constructor(timeFramesMilliseconds?: Observable<number>, initialVelocityX = 0, initialVelocityY = 0) {
     const tFrames = timeFramesMilliseconds ? timeFramesMilliseconds : this.timeFrames(10);
+    const dfX = this.dynamicsF(initialVelocityX, 0);
     this.deltaSpaceObsX = this.accelerateSubjectX.pipe(
-        switchMap(acc => this.dynamics(acc, this.velocityX, this.spaceTravelledX, tFrames)),
-        tap(data => this.velocityX = data.vel),
-        tap(data => this.spaceTravelledX = data.cumulatedSpace),
+        switchMap(acc => dfX(acc, tFrames)),
         share()
       );
+    const dfY = this.dynamicsF(initialVelocityY, 0);
     this.deltaSpaceObsY = this.accelerateSubjectY.pipe(
-        switchMap(acc => this.dynamics(acc, this.velocityY, this.spaceTravelledY, tFrames)),
-        tap(data => this.velocityY = data.vel),
-        tap(data => this.spaceTravelledY = data.cumulatedSpace),
+        switchMap(acc => dfY(acc, tFrames)),
         share()
       );
   }
+  // higher order function that returns a function that calculates the values reletaed to  the dynamics of the object
+  dynamicsF(initialVelocity: number, spaceTravelled: number) {
+      let vel = initialVelocity;
+      let cumulatedSpace = spaceTravelled;
+      const df = (acc: number, timeFramesMilliseconds: Observable<number>) => {
+        return timeFramesMilliseconds.pipe(
+            map(deltaTime => {
+                const seconds = deltaTime / 1000;
+                const deltaVelSpace = this.deltaSpaceAndVelocityFromAcceleration(acc, vel, seconds);
+                const deltaSpace = deltaVelSpace.deltaSpace;
+                cumulatedSpace = cumulatedSpace + deltaSpace;
+                vel = vel + deltaVelSpace.deltaVelocity;
+                const direction = vel / Math.abs(vel);
+                vel = Math.abs(vel) > this.maxVelocity ? this.maxVelocity * direction : vel;
+                if (acc === 0 && Math.abs(vel) < VEL_0) {
+                  vel = 0;
+                }
+                return {deltaSpace, cumulatedSpace, acc, vel};
+            })
+        );
+      };
+      return df;
+  }
+
   private timeFrames(frameApproximateLenght: number, numberOfFrames?: number) {
     const clock = timer(0, frameApproximateLenght);
     if (numberOfFrames) {
@@ -75,7 +94,7 @@ export class MobileOject {
         tap(() => t1 = Date.now()),
         map(() => t1 - t0),
         tap(() => t0 = t1),
-        share()  // THIS IS ABSOLUTELY CRUCIAL TO MAKE SURE WE BRAKE CORRECTLY
+        share()  // THIS IS TO MAKE SURE WE SHARE THE SAME CLOCK ON BOTH DIMENSIONS X & Y
     );
     return obsTime;
   }
@@ -93,26 +112,6 @@ export class MobileOject {
       return {deltaVelocity, deltaSpace};
   }
 
-  private dynamics(acc: number, initialVelocity: number, spaceTravelled: number, timeFramesMilliseconds: Observable<number>) {
-    let vel = initialVelocity;
-    let cumulatedSpace = spaceTravelled;
-    return timeFramesMilliseconds.pipe(
-        map(deltaTime => {
-            const seconds = deltaTime / 1000;
-            const deltaVelSpace = this.deltaSpaceAndVelocityFromAcceleration(acc, vel, seconds);
-            const deltaSpace = deltaVelSpace.deltaSpace;
-            cumulatedSpace = cumulatedSpace + deltaSpace;
-            vel = vel + deltaVelSpace.deltaVelocity;
-            const direction = vel / Math.abs(vel);
-            vel = Math.abs(vel) > this.maxVelocity ? this.maxVelocity * direction : vel;
-            if (acc === 0 && Math.abs(vel) < VEL_0) {
-              vel = 0;
-            }
-            return {deltaSpace, cumulatedSpace, acc, vel};
-        })
-    );
-  }
-
   accelerateX(acc: number) {
     this.accelerateSubjectX.next(acc);
   }
@@ -121,49 +120,52 @@ export class MobileOject {
   }
 
   brake() {
-    const directionX = this.velocityX > 0 ? -1 : 1;
-    const directionY = this.velocityY > 0 ? -1 : 1;
-    this.brakeAlongDirection(this.accelerateSubjectX, this.deltaSpaceObsX, directionX);
-    this.brakeAlongDirection(this.accelerateSubjectY, this.deltaSpaceObsY, directionY);
+    this.brakeAlongAxis(this.deltaSpaceObsX, this.accelerateSubjectX);
+    this.brakeAlongAxis(this.deltaSpaceObsY, this.accelerateSubjectY);
   }
-  private brakeAlongDirection(accObs: BehaviorSubject<number>, deltaSpaceObs: Observable<Dynamics>, direction: number) {
-    accObs.next(direction * this.brakeDeceleration);
-    deltaSpaceObs.pipe(
-        map(data => data.vel),
-        filter(vel => Math.abs(vel) < VEL_0),
-        tap(() => {
-          accObs.next(0);
-          console.log('velX', this.velocityX);
-          console.log('velY', this.velocityY);
-          this.velocityX = 0;
-          this.velocityY = 0;
-        }),
-        take(1), // to complete the observable
+  private brakeAlongAxis(deltaSpaceObs: Observable<Dynamics>, accObs: BehaviorSubject<number>) {
+    return this.getDirection(deltaSpaceObs).pipe(
+        switchMap(direction => {
+            accObs.next(-1 * direction * this.brakeDeceleration);
+            return deltaSpaceObs.pipe(
+                filter(data => Math.abs(data.vel) < VEL_0),
+                tap(data => accObs.next(0)),
+            );
+        })
     ).subscribe();
   }
-//   private brakeAlongDirection(accObs: BehaviorSubject<number>, deltaSpaceObs: Observable<Dynamics>, direction: number) {
-//     let continueDeceleration = true;
-//     const brakeSub = interval(100).pipe(
-//     //   take(10),
-//       filter(() => continueDeceleration),
-//     //   tap(decelerationFactor => accObs.next(decelerationFactor * direction * BRAKE_DECELERATION)),
-//       tap(() => accObs.next(direction * BRAKE_DECELERATION)),
-//       switchMap(() => deltaSpaceObs.pipe(
-//         map(data => data.vel),
-//         filter(vel => Math.abs(vel) < VEL_0),
-//         tap(() => {
-//           continueDeceleration = false;
-//           accObs.next(0);
-//           console.log('velX', this.velocityX);
-//           console.log('velY', this.velocityY);
-//           this.velocityX = 0;
-//           this.velocityY = 0;
-//         }),
-//         // take(1), // to complete the observable
-//       ))
+  // returns an Observable of number indicating the direction: 1 means positive velocity, -1 negative velocity
+  private getDirection(deltaSpaceObs: Observable<Dynamics>) {
+    return deltaSpaceObs.pipe(
+        take(1),
+        map(data => data.vel > 0 ? 1 : -1),
+    );
+  }
+
+
+
+//   brake1() {
+//     this.deltaSpaceObsX.pipe(
+//         take(1),
+//         map(data => data.vel > 0 ? -1 : 1),  // get the direction looking at the velocity
+//         switchMap(direction => this.brakeAlongDirection1(this.accelerateSubjectX, this.deltaSpaceObsX, direction))
+//     ).subscribe();
+//     this.deltaSpaceObsY.pipe(
+//         take(1),
+//         map(data => data.vel > 0 ? -1 : 1),  // get the direction looking at the velocity
+//         switchMap(direction => this.brakeAlongDirection1(this.accelerateSubjectY, this.deltaSpaceObsY, direction))
 //     ).subscribe();
 //   }
-
+//   private brakeAlongDirection1(accObs: BehaviorSubject<number>, deltaSpaceObs: Observable<Dynamics>, direction: number) {
+//     accObs.next(direction * this.brakeDeceleration);
+//     return deltaSpaceObs.pipe(
+//         filter(data => Math.abs(data.vel) < VEL_0),
+//         tap(data => {
+//             accObs.next(0);
+//         }),
+//         take(1), // to complete the observable
+//     );
+//   }
 
 //   accelerateHorizontal(acceleration: number, forward = true) {
 //     const directionSign = forward ? 1 : -1;
