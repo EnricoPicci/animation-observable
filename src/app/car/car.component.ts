@@ -1,24 +1,24 @@
 import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import {ViewChild, ElementRef, Renderer2} from '@angular/core';
 
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription } from 'rxjs/Subscription'; // *
 import {animationFrame} from 'rxjs/scheduler/animationFrame';
-import { Observable } from 'rxjs/Observable';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { interval } from 'rxjs/observable/interval';
+import { Observable } from 'rxjs/Observable'; // *
+import { BehaviorSubject } from 'rxjs/BehaviorSubject'; // *
+import { interval } from 'rxjs/observable/interval'; // *
 import { defer } from 'rxjs/observable/defer';
 import { combineLatest } from 'rxjs/observable/combineLatest';
-import { tap } from 'rxjs/operators';
-import { map } from 'rxjs/operators';
-import { switchMap } from 'rxjs/operators';
-import { share } from 'rxjs/operators';
+import { tap } from 'rxjs/operators'; // *
+import { map } from 'rxjs/operators'; // *
+import { switchMap } from 'rxjs/operators'; // *
+import { share } from 'rxjs/operators'; // *
 import { scan } from 'rxjs/operators';
 import { filter } from 'rxjs/operators';
 import { throttleTime } from 'rxjs/operators';
 import { distinctUntilChanged } from 'rxjs/operators';
-import { take } from 'rxjs/operators';
+import { take } from 'rxjs/operators'; // *
 
-interface Dynamics { deltaSpace: number; acc: number; vel: number; }
+interface Dynamics { deltaSpace: number; acc: number; vel: number; } // *
 
 
 const PLAYGROUND_HEIGHT = 600;
@@ -26,7 +26,9 @@ const PLAYGROUND_WIDTH = 500;
 
 const ACCELERATION = 3;
 const BRAKE_DECELERATION = 100;
-const VEL_0 = 10;  // if velocity (in pix per second) is lower than this value it is considered 0 when braking
+
+// *
+const VEL_0 = 10; // * // if velocity (in pix per second) is lower than this value it is considered 0 when braking
 
 
 @Component({
@@ -39,6 +41,20 @@ export class CarComponent implements OnInit, AfterViewInit, OnDestroy {
   subscriptionX: Subscription;
   subscriptionY: Subscription;
 
+  accXViewVal = 0; accXViewValSub: Subscription;
+  velXViewVal = 0; velXViewValSub: Subscription;
+  accYViewVal = 0; accYViewValSub: Subscription;
+  velYViewVal = 0; velYViewValSub: Subscription;
+  // cardirection = 0; cardirectionSub: Subscription;
+
+
+  // +
+  velocityX = 0;
+  velocityY = 0;
+
+  deltaSpaceObsX: Observable<Dynamics>;
+  deltaSpaceObsY: Observable<Dynamics>;
+
   leftAccSub: Subscription;
   rightAccSub: Subscription;
   upAccSub: Subscription;
@@ -46,21 +62,12 @@ export class CarComponent implements OnInit, AfterViewInit, OnDestroy {
 
   accelerateX = new BehaviorSubject<number>(0);
   accelerateY = new BehaviorSubject<number>(0);
-
-  velocityX = 0;
-  deltaSpaceObsX: Observable<Dynamics>;
-  velocityY = 0;
-  deltaSpaceObsY: Observable<Dynamics>;
-
-  accXViewVal = 0; accXViewValSub: Subscription;
-  velXViewVal = 0; velXViewValSub: Subscription;
-  accYViewVal = 0; accYViewValSub: Subscription;
-  velYViewVal = 0; velYViewValSub: Subscription;
-  // cardirection = 0; cardirectionSub: Subscription;
+  // +
 
   constructor(private renderer: Renderer2) { }
 
   ngOnInit() {
+    // +
     this.deltaSpaceObsX = this.accelerateX.pipe(
       switchMap(acc => this.deltaSpace(acc, this.velocityX, this.timeBetweenFrames())),
       tap(data => this.velocityX = data.vel),
@@ -71,6 +78,7 @@ export class CarComponent implements OnInit, AfterViewInit, OnDestroy {
       tap(data => this.velocityY = data.vel),
       share()
     );
+    // +
 
     this.accXViewValSub = this.accXView().subscribe(val => this.accXViewVal = val);
     this.velXViewValSub = this.velXView().subscribe(val => this.velXViewVal = val);
@@ -144,10 +152,14 @@ export class CarComponent implements OnInit, AfterViewInit, OnDestroy {
       tap(acceleration => accObs.next(acceleration * directionSign))
     ).subscribe();
   }
+
+  // +
   pedalUp() {
     this.accelerateX.next(0);
     this.accelerateY.next(0);
   }
+  // +
+
   brake() {
     const directionX = this.velocityX > 0 ? -1 : 1;
     const directionY = this.velocityY > 0 ? -1 : 1;
