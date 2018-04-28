@@ -8,6 +8,7 @@ import { tap } from 'rxjs/operators';
 import { map } from 'rxjs/operators';
 import { take } from 'rxjs/operators';
 import { scan } from 'rxjs/operators';
+import { share } from 'rxjs/operators';
 
 import {MobileOject} from './mobile-object';
 
@@ -20,7 +21,7 @@ describe('accelerate', () => {
         let speed = 0;
         let spaceTravelled = 0;
         const mobileObject = new MobileOject(tf);
-        mobileObject.accelerateX.next(acceleration);
+        mobileObject.accelerateX(acceleration);
         mobileObject.deltaSpaceObsX
         .subscribe(
             data => {
@@ -49,7 +50,7 @@ describe('accelerate', () => {
         let speed = 0;
         let spaceTravelled = 0;
         const mobileObject = new MobileOject(tf);
-        mobileObject.accelerateY.next(acceleration);
+        mobileObject.accelerateY(acceleration);
         mobileObject.deltaSpaceObsY
         .subscribe(
             data => {
@@ -78,7 +79,7 @@ describe('accelerate', () => {
         let speed = 0;
         let spaceTravelled = 0;
         const mobileObject = new MobileOject(tf);
-        mobileObject.accelerateY.next(acceleration);
+        mobileObject.accelerateY(acceleration);
         mobileObject.deltaSpaceObsY
         .subscribe(
             data => {
@@ -113,7 +114,7 @@ describe('the object has an initial velocity but no acceleration', () => {
         const initialSpeed = 20;
         mobileObject.velocityX = initialSpeed;
         // accelerate to start the movement even if acceleration is 0
-        setTimeout(() => mobileObject.accelerateX.next(0), 0);
+        setTimeout(() => mobileObject.accelerateX(0), 0);
         mobileObject.deltaSpaceObsX
         .subscribe(
             data => {
@@ -146,9 +147,9 @@ describe('accelerate and then decelerate', () => {
         let acc = 0;
         const mobileObject = new MobileOject();
         // first accelerate +20
-        setTimeout(() => mobileObject.accelerateX.next(20), 0);
+        setTimeout(() => mobileObject.accelerateX(20), 0);
         // after 1 second no acceleration
-        setTimeout(() => mobileObject.accelerateX.next(0), 1000);
+        setTimeout(() => mobileObject.accelerateX(0), 1000);
         mobileObject.deltaSpaceObsX
         .subscribe(
             data => {
@@ -183,9 +184,9 @@ describe('accelerate and then decelerate', () => {
         let acc = 0;
         const mobileObject = new MobileOject();
         // first accelerate +20
-        setTimeout(() => mobileObject.accelerateX.next(20), 0);
+        setTimeout(() => mobileObject.accelerateX(20), 0);
         // after 1 second decelerate -10
-        setTimeout(() => mobileObject.accelerateX.next(-10), 1000);
+        setTimeout(() => mobileObject.accelerateX(-10), 1000);
         mobileObject.deltaSpaceObsX
         .subscribe(
             data => {
@@ -216,6 +217,194 @@ describe('accelerate and then decelerate', () => {
 
 });
 
+
+describe('brakes', () => {
+
+    it('accelerates by half of brake deceleration and after 1 second brakes - after 2 seconds it should be still', done => {
+        let speedX = 0;
+        let speedY = 0;
+        const mobileObject = new MobileOject();
+        // accelerate by half of brake deceleration
+        const acc = mobileObject.brakeDeceleration;
+        setTimeout(() => mobileObject.accelerateX(acc), 0);
+        setTimeout(() => mobileObject.accelerateY(acc), 0);
+        // after 1 second brakes
+        setTimeout(() => mobileObject.brake(), 1000);
+        mobileObject.deltaSpaceObsX
+        .subscribe(
+            data => {
+                speedX = data.vel;
+            }
+        );
+        mobileObject.deltaSpaceObsY
+        .subscribe(
+            data => {
+                speedY = data.vel;
+            }
+        );
+        setTimeout(() => {
+            if (speedX !== 0) {
+                console.error('speedX not as expected', speedX);
+                done('speedX not as expected');
+                throw(new Error('speedX not as expected'));
+            }
+            if (speedY !== 0) {
+                console.error('speedY not as expected', speedY);
+                done('speedY not as expected');
+                throw(new Error('speedY not as expected'));
+            }
+            done();
+        }, 2000);
+    });
+
+    it('accelerates by half of brake deceleration only on X and after 1 second brakes - after 2 seconds it should be still', done => {
+        let speedX = 0;
+        let speedY = 0;
+        const mobileObject = new MobileOject();
+        // accelerate by half of brake deceleration
+        const acc = mobileObject.brakeDeceleration;
+        setTimeout(() => mobileObject.accelerateX(acc), 0);
+        // after 1 second brakes
+        setTimeout(() => mobileObject.brake(), 1000);
+        mobileObject.deltaSpaceObsX
+        .subscribe(
+            data => {
+                speedX = data.vel;
+            }
+        );
+        mobileObject.deltaSpaceObsY
+        .subscribe(
+            data => {
+                speedY = data.vel;
+            }
+        );
+        setTimeout(() => {
+            if (speedX !== 0) {
+                console.error('speedX not as expected', speedX);
+                done('speedX not as expected');
+                throw(new Error('speedX not as expected'));
+            }
+            if (speedY !== 0) {
+                console.error('speedY not as expected', speedY);
+                done('speedY not as expected');
+                throw(new Error('speedY not as expected'));
+            }
+            done();
+        }, 2000);
+    });
+
+    it('accelerates by half of brake deceleration only on Y and after 1 second brakes - after 2 seconds it should be still', done => {
+        let speedX = 0;
+        let speedY = 0;
+        const mobileObject = new MobileOject();
+        // accelerate by half of brake deceleration
+        const acc = mobileObject.brakeDeceleration;
+        setTimeout(() => mobileObject.accelerateY(acc), 0);
+        // after 1 second brakes
+        setTimeout(() => mobileObject.brake(), 1000);
+        mobileObject.deltaSpaceObsX
+        .subscribe(
+            data => {
+                speedX = data.vel;
+            }
+        );
+        mobileObject.deltaSpaceObsY
+        .subscribe(
+            data => {
+                speedY = data.vel;
+            }
+        );
+        setTimeout(() => {
+            if (speedX !== 0) {
+                console.error('speedX not as expected', speedX);
+                done('speedX not as expected');
+                throw(new Error('speedX not as expected'));
+            }
+            if (speedY !== 0) {
+                console.error('speedY not as expected', speedY);
+                done('speedY not as expected');
+                throw(new Error('speedY not as expected'));
+            }
+            done();
+        }, 2000);
+    });
+
+    it('accelerates by 1 and after 1 second brakes - after 2 seconds it should be still', done => {
+        let speedX = 0;
+        let speedY = 0;
+        const mobileObject = new MobileOject();
+        // accelerate by half of brake deceleration
+        const acc = 1;
+        setTimeout(() => mobileObject.accelerateX(acc), 0);
+        setTimeout(() => mobileObject.accelerateY(acc), 0);
+        // after 1 second brakes
+        setTimeout(() => mobileObject.brake(), 1000);
+        mobileObject.deltaSpaceObsX
+        .subscribe(
+            data => {
+                speedX = data.vel;
+            }
+        );
+        mobileObject.deltaSpaceObsY
+        .subscribe(
+            data => {
+                speedY = data.vel;
+            }
+        );
+        setTimeout(() => {
+            if (speedX !== 0) {
+                console.error('speedX not as expected', speedX);
+                done('speedX not as expected');
+                throw(new Error('speedX not as expected'));
+            }
+            if (speedY !== 0) {
+                console.error('speedY not as expected', speedY);
+                done('speedY not as expected');
+                throw(new Error('speedY not as expected'));
+            }
+            done();
+        }, 2000);
+    });
+
+    it('accelerates by 1000 and after 1 second brakes - after 2 seconds it should not be still', done => {
+        let speedX = 0;
+        let speedY = 0;
+        const mobileObject = new MobileOject();
+        // accelerate by half of brake deceleration
+        const acc = 1000;
+        setTimeout(() => mobileObject.accelerateX(acc), 0);
+        setTimeout(() => mobileObject.accelerateY(acc), 0);
+        // after 1 second brakes
+        setTimeout(() => mobileObject.brake(), 1000);
+        mobileObject.deltaSpaceObsX
+        .subscribe(
+            data => {
+                speedX = data.vel;
+            }
+        );
+        mobileObject.deltaSpaceObsY
+        .subscribe(
+            data => {
+                speedY = data.vel;
+            }
+        );
+        setTimeout(() => {
+            if (speedX < 100) {
+                console.error('speedX not as expected', speedX);
+                done('speedX not as expected');
+                throw(new Error('speedX not as expected'));
+            }
+            if (speedY < 100) {
+                console.error('speedY not as expected', speedY);
+                done('speedY not as expected');
+                throw(new Error('speedY not as expected'));
+            }
+            done();
+        }, 2000);
+    });
+
+});
+
 function timeFrames(interval: number, numberOfFrames: number) {
     const clock = timer(0, interval).pipe(take(numberOfFrames));
 
@@ -226,7 +415,8 @@ function timeFrames(interval: number, numberOfFrames: number) {
         tap(() => t1 = Date.now()),
         map(() => t1 - t0),
         // tap(d => timeIntervals.push(d)),
-        tap(() => t0 = t1)
+        tap(() => t0 = t1),
+        share()
     );
 
     return obsTime;

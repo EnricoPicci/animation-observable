@@ -25,7 +25,7 @@ const PLAYGROUND_HEIGHT = 600;
 const PLAYGROUND_WIDTH = 500;
 
 const ACCELERATION = 3;
-const BRAKE_DECELERATION = 100;
+const BRAKE_DECELERATION = 100; // *
 
 // *
 const VEL_0 = 10; // * // if velocity (in pix per second) is lower than this value it is considered 0 when braking
