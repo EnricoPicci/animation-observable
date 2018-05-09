@@ -37,6 +37,9 @@ export class MobileObject {
   private accelerateSubjectX = new BehaviorSubject<number>(0);
   private accelerateSubjectY = new BehaviorSubject<number>(0);
 
+  private brakeSubscriptionX: Subscription;
+  private brakeSubscriptionY: Subscription;
+
   // timeFramesMilliseconds is a sequence of time intervals in milliseconds
   // at the end of each timeFrame an instance of 'Dynamics' is emitted by 'deltaSpaceObsX' and'deltaSpaceObsY' observables
   // each event emitted goes with an intance of type 'Dynamics', related to the X and Y axix depending on the Observable
@@ -110,15 +113,21 @@ export class MobileObject {
   }
 
   accelerateX(acc: number) {
+    if (this.brakeSubscriptionX) {
+        this.brakeSubscriptionX.unsubscribe();
+    }
     this.accelerateSubjectX.next(acc);
   }
   accelerateY(acc: number) {
+    if (this.brakeSubscriptionY) {
+        this.brakeSubscriptionY.unsubscribe();
+    }
     this.accelerateSubjectY.next(acc);
   }
 
   brake() {
-    this.brakeAlongAxis(this.deltaSpaceObsX, this.accelerateSubjectX);
-    this.brakeAlongAxis(this.deltaSpaceObsY, this.accelerateSubjectY);
+    this.brakeSubscriptionX = this.brakeAlongAxis(this.deltaSpaceObsX, this.accelerateSubjectX);
+    this.brakeSubscriptionY = this.brakeAlongAxis(this.deltaSpaceObsY, this.accelerateSubjectY);
   }
   private brakeAlongAxis(deltaSpaceObs: Observable<Dynamics>, accObs: BehaviorSubject<number>) {
     const subscription: Subscription = this.getDirection(deltaSpaceObs).pipe(
@@ -131,6 +140,7 @@ export class MobileObject {
             );
         })
     ).subscribe();
+    return subscription;
   }
   // returns an Observable of number indicating the direction: 1 means positive velocity, -1 negative velocity
   private getDirection(deltaSpaceObs: Observable<Dynamics>) {

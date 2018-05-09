@@ -5,8 +5,8 @@ import { expect } from 'chai';
 import { Observable } from 'rxjs/Observable';
 import { timer } from 'rxjs/observable/timer';
 import { tap } from 'rxjs/operators';
-    import { map } from 'rxjs/operators';
-    import { take } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 import { scan } from 'rxjs/operators';
 import { share } from 'rxjs/operators';
 import { combineLatest } from 'rxjs/operators';
@@ -33,10 +33,12 @@ describe('accelerate', () => {
         setTimeout(() => {
             if (speed > 21 || speed < 19) {
                 console.error('speed not as expected', speed);
+                done();
                 throw(new Error('speed not as expected'));
             }
             if (spaceTravelled > 10.5 || spaceTravelled < 9.5) {
                 console.error('spaceTravelled not as expected', spaceTravelled);
+                done();
                 throw(new Error('spaceTravelled not as expected'));
             }
             done();
@@ -60,10 +62,12 @@ describe('accelerate', () => {
         setTimeout(() => {
             if (speed > 61 || speed < 59) {
                 console.error('speed not as expected', speed);
+                done();
                 throw(new Error('speed not as expected'));
             }
             if (spaceTravelled > 61 || spaceTravelled < 59) {
                 console.error('spaceTravelled not as expected', spaceTravelled);
+                done();
                 throw(new Error('spaceTravelled not as expected'));
             }
             done();
@@ -92,18 +96,22 @@ describe('accelerate', () => {
         setTimeout(() => {
             if (speedX > 21 || speedX < 19) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (spaceTravelledX > 10.5 || spaceTravelledX < 9.5) {
                 console.error('spaceTravelledX not as expected', spaceTravelledX);
+                done();
                 throw(new Error('spaceTravelledX not as expected'));
             }
             if (speedY > 21 || speedY < 19) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             if (spaceTravelledY > 10.5 || spaceTravelledY < 9.5) {
                 console.error('spaceTravelledY not as expected', spaceTravelledY);
+                done();
                 throw(new Error('spaceTravelledY not as expected'));
             }
             done();
@@ -127,10 +135,12 @@ describe('accelerate', () => {
         setTimeout(() => {
             if (speed < -121 || speed > -119) {
                 console.error('speed not as expected', speed);
+                done();
                 throw(new Error('speed not as expected'));
             }
             if (spaceTravelled < -181 || spaceTravelled > -179) {
                 console.error('spaceTravelled not as expected', spaceTravelled);
+                done();
                 throw(new Error('spaceTravelled not as expected'));
             }
             done();
@@ -160,10 +170,12 @@ describe('the object has an initial velocity but no acceleration', () => {
         setTimeout(() => {
             if (speed !== initialSpeed) {
                 console.error('speed not as expected', speed);
+                done();
                 throw(new Error('speed not as expected'));
             }
             if (spaceTravelled > 42 || spaceTravelled < 38) {
                 console.error('spaceTravelled not as expected', spaceTravelled);
+                done();
                 throw(new Error('spaceTravelled not as expected'));
             }
             done();
@@ -194,14 +206,17 @@ describe('accelerate and then decelerate', () => {
         setTimeout(() => {
             if (acc !== 0) {
                 console.error('acceleration not as expected', acc);
+                done();
                 throw(new Error('acceleration not as expected'));
             }
             if (speed > 22 || speed < 18) {
                 console.error('speed not as expected', speed);
+                done();
                 throw(new Error('speed not as expected'));
             }
             if (spaceTravelled > 31 || spaceTravelled < 29) {
                 console.error('spaceTravelled not as expected', spaceTravelled);
+                done();
                 throw(new Error('spaceTravelled not as expected'));
             }
             done();
@@ -228,14 +243,17 @@ describe('accelerate and then decelerate', () => {
         setTimeout(() => {
             if (acc !== -10) {
                 console.error('acceleration not as expected', acc);
+                done();
                 throw(new Error('acceleration not as expected'));
             }
             if (speed > 1 || speed < -1) {
                 console.error('speed not as expected', speed);
+                done();
                 throw(new Error('speed not as expected'));
             }
             if (spaceTravelled > 31 || spaceTravelled < 29) {
                 console.error('spaceTravelled not as expected', spaceTravelled);
+                done();
                 throw(new Error('spaceTravelled not as expected'));
             }
             done();
@@ -271,10 +289,12 @@ describe('brakes', () => {
         setTimeout(() => {
             if (speedX !== 0) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (speedY !== 0) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             done();
@@ -305,10 +325,12 @@ describe('brakes', () => {
         setTimeout(() => {
             if (speedX !== 0) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (speedY !== 0) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             done();
@@ -339,10 +361,12 @@ describe('brakes', () => {
         setTimeout(() => {
             if (speedX !== 0) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (speedY !== 0) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             done();
@@ -374,10 +398,12 @@ describe('brakes', () => {
         setTimeout(() => {
             if (speedX !== 0) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (speedY !== 0) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             done();
@@ -388,7 +414,6 @@ describe('brakes', () => {
         let speedX = 0;
         let speedY = 0;
         const mobileObject = new MobileObject();
-        // accelerate by half of brake deceleration
         const acc = 1000;
         setTimeout(() => mobileObject.accelerateX(acc), 0);
         setTimeout(() => mobileObject.accelerateY(acc), 0);
@@ -409,14 +434,60 @@ describe('brakes', () => {
         setTimeout(() => {
             if (speedX < 100) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (speedY < 100) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             done();
         }, 2000);
+    });
+
+    it(`accelerates by 100 and after 1 second brakes - after 1.5 accelerates negative by -200
+        after 3 seconds it should still move approximatively with a speed of 50`, done => {
+        let speedX = 0;
+        let speedY = 0;
+        const mobileObject = new MobileObject();
+        const acc = 100;
+        setTimeout(() => mobileObject.accelerateX(acc), 0);
+        setTimeout(() => mobileObject.accelerateY(acc), 0);
+        // after 1 second brakes
+        setTimeout(() => mobileObject.brake(), 1000);
+        // after 1.5 second accelerate negative by -1
+        setTimeout(() => {
+            mobileObject.accelerateX(-2 * acc);
+            mobileObject.accelerateY(-2 * acc);
+        }, 1500);
+        mobileObject.deltaSpaceObsX
+        .subscribe(
+            data => {
+                speedX = data.vel;
+            }
+        );
+        mobileObject.deltaSpaceObsY
+        .subscribe(
+            data => {
+                speedY = data.vel;
+            }
+        );
+        setTimeout(() => {
+            console.log('speedX is ', speedX);
+            console.log('speedY is ', speedY);
+            if (speedX > -230) {
+                console.error('speedX not as expected', speedX);
+                done();
+                throw(new Error('speedX not as expected'));
+            }
+            if (speedY > -230) {
+                console.error('speedY not as expected', speedY);
+                done();
+                throw(new Error('speedY not as expected'));
+            }
+            done();
+        }, 3000);
     });
 
 });
@@ -448,10 +519,12 @@ describe('accelerate brake and then pedal up', () => {
         setTimeout(() => {
             if (speedX > expectedVelAfter2Sec * 1.1 || speedX < expectedVelAfter2Sec * 0.9) {
                 console.error('speedX not as expected', speedX);
+                done();
                 throw(new Error('speedX not as expected'));
             }
             if (speedY > expectedVelAfter2Sec * 1.1 || speedY < expectedVelAfter2Sec * 0.9) {
                 console.error('speedY not as expected', speedY);
+                done();
                 throw(new Error('speedY not as expected'));
             }
             done();
@@ -483,13 +556,6 @@ describe('check if this is an HOT observable', () => {
         );
         // after 1 second unsubscribe
         setTimeout(() => subscription.unsubscribe(), 1000);
-        // check speed and space after 1 seconds
-        setTimeout(() => {
-            console.log('speedX after 1 seconds', speedX);
-            console.log('speedY after 1 seconds', speedY);
-            console.log('spaceX after 1 seconds', spaceX);
-            console.log('spaceY after 1 seconds', spaceY);
-        }, 1000);
         // after 2 seconds subscribes again and checks
         setTimeout(() => {
             mobileObject.deltaSpaceObsX.pipe(combineLatest(mobileObject.deltaSpaceObsY)).pipe(
@@ -507,6 +573,7 @@ describe('check if this is an HOT observable', () => {
                     console.log('spaceY after 2 seconds at second subscribe', spaceY);
                     if (spaceX > 101 || spaceX < 99 || spaceY > 101 || spaceY < 99) {
                         console.error('spaceX or spaceY not as expected', spaceX, spaceY);
+                        done();
                         throw(new Error('spaceX or spaceY not as expected'));
                     }
                 }
