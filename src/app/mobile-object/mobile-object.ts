@@ -26,13 +26,13 @@ const BRAKE_DECELERATION = 100;
 //            i.e. delta space, velocity, acceleration, space covered
 //   2 Observables (one per dimension, horizontal and vertical) are dedicated to emit new acceleration events
 //   1 Observable is the timer that ticks at the desired time intervals
-export class MobileOject {
+export class MobileObject {
 
   maxVelocity = MAX_VELOCITY;
   brakeDeceleration = BRAKE_DECELERATION;
 
-  deltaSpaceObsX: Observable<Dynamics>;
-  deltaSpaceObsY: Observable<Dynamics>;
+  readonly deltaSpaceObsX: Observable<Dynamics>;
+  readonly deltaSpaceObsY: Observable<Dynamics>;
 
   private accelerateSubjectX = new BehaviorSubject<number>(0);
   private accelerateSubjectY = new BehaviorSubject<number>(0);
@@ -59,8 +59,8 @@ export class MobileOject {
         share()
       );
   }
-  // higher order function that returns a function that calculates the values reletaed to  the dynamics of the object
-  dynamicsF(initialVelocity: number, spaceTravelled: number) {
+  // higher order function that returns a function that calculates the values releted to  the dynamics of the object
+  private dynamicsF(initialVelocity: number, spaceTravelled: number) {
       let vel = initialVelocity;
       let cumulatedSpace = spaceTravelled;
       const df = (acc: number, timeFramesMilliseconds: Observable<number>) => {
@@ -99,9 +99,6 @@ export class MobileOject {
     return obsTime;
   }
 
-  private deltaSpaceFromVelocity(velocity: number, deltaTime: number) {
-      return velocity * deltaTime;
-  }
   private deltaVelocityFromAcceleration(acceleration: number, deltaTime: number) {
       return acceleration * deltaTime;
   }
@@ -124,12 +121,13 @@ export class MobileOject {
     this.brakeAlongAxis(this.deltaSpaceObsY, this.accelerateSubjectY);
   }
   private brakeAlongAxis(deltaSpaceObs: Observable<Dynamics>, accObs: BehaviorSubject<number>) {
-    return this.getDirection(deltaSpaceObs).pipe(
+    const subscription: Subscription = this.getDirection(deltaSpaceObs).pipe(
         switchMap(direction => {
             accObs.next(-1 * direction * this.brakeDeceleration);
             return deltaSpaceObs.pipe(
                 filter(data => Math.abs(data.vel) < VEL_0),
                 tap(data => accObs.next(0)),
+                tap(() => subscription.unsubscribe())
             );
         })
     ).subscribe();
@@ -142,50 +140,9 @@ export class MobileOject {
     );
   }
 
-
-
-//   brake1() {
-//     this.deltaSpaceObsX.pipe(
-//         take(1),
-//         map(data => data.vel > 0 ? -1 : 1),  // get the direction looking at the velocity
-//         switchMap(direction => this.brakeAlongDirection1(this.accelerateSubjectX, this.deltaSpaceObsX, direction))
-//     ).subscribe();
-//     this.deltaSpaceObsY.pipe(
-//         take(1),
-//         map(data => data.vel > 0 ? -1 : 1),  // get the direction looking at the velocity
-//         switchMap(direction => this.brakeAlongDirection1(this.accelerateSubjectY, this.deltaSpaceObsY, direction))
-//     ).subscribe();
-//   }
-//   private brakeAlongDirection1(accObs: BehaviorSubject<number>, deltaSpaceObs: Observable<Dynamics>, direction: number) {
-//     accObs.next(direction * this.brakeDeceleration);
-//     return deltaSpaceObs.pipe(
-//         filter(data => Math.abs(data.vel) < VEL_0),
-//         tap(data => {
-//             accObs.next(0);
-//         }),
-//         take(1), // to complete the observable
-//     );
-//   }
-
-//   accelerateHorizontal(acceleration: number, forward = true) {
-//     const directionSign = forward ? 1 : -1;
-//     return interval(50).pipe(
-//       take(100),
-//       tap(acceleration => this.accelerateX.next(acceleration * directionSign))
-//     ).subscribe();
-//   }
-
-//   powerHorizontal(percentageOfMaxPower: number, forward = true) {
-//     const directionSign = forward ? 1 : -1;
-//     return interval(50).pipe(
-//     //   take(100),
-//       tap(acceleration => this.accelerateX.next(acceleration * directionSign))
-//     ).subscribe();
-//   }
-
-//   pedalUp() {
-//     this.accelerateX.next(0);
-//     this.accelerateY.next(0);
-//   }
+  pedalUp() {
+    this.accelerateX(0);
+    this.accelerateY(0);
+  }
 
 }
